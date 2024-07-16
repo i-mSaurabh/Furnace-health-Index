@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Furnace Health Index</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script> <!-- Include Chart.js Annotation Plugin -->
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+            color: #333;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            margin: 20px 0;
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .main-layout {
+            display: flex;
+            width: 90%;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .left-panel {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .gauge-container {
+            text-align: center;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .gauge-meter {
+            position: relative;
+            width: 100%;
+            height: 100px; /* Adjust size as needed */
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .gauge-meter span {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, #44bd32 0%, #fbc531 50%, #e84118 100%);
+            transition: height 0.3s ease;
+        }
+        .gauge-value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .gauge-status {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .status-ok {
+            color: green;
+        }
+        .status-warning {
+            color: orange;
+        }
+        .status-critical {
+            color: red;
+        }
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin-left: 20px;
+            width: 40%;
+        }
+        .section {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .section h3 {
+            margin-top: 0;
+        }
+        .metrics-section div, .status-section div, .detail-section div {
+            margin: 5px 0;
+        }
+        .system-health-container {
+            width: 100%;
+            text-align: center;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .system-health-gauge {
+            width: 100px; /* Adjust size as needed */
+            height: 100px; /* Adjust size as needed */
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            margin-bottom: 10px;
+            margin: auto;
+            
+        }
+        .system-health-gauge span {
+            position: relative;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, #44bd32 0%, #fbc531 50%, #e84118 100%);
+            transition: height 0.3s ease;
+        }
+        .system-health-value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .system-health-status {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .graph-container {
+            margin-top: 20px;
+            width: 48%; /* Adjust width for spacing */
+            text-align: center;
+        }
+        .graph-container:nth-child(odd) {
+            margin-right: 4%; /* Adjust margin for spacing */
+        }
+        canvas {
+            margin: auto;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Furnace Health Index</div>
+    
+    <!-- System Health Gauge Container -->
+    <div class="system-health-container">
+        <div class="system-health-gauge" id="systemHealthGaugeMeter">
+            <span style="height: 60%;"></span>
+        </div>
+        <div class="system-health-value" id="systemHealthValue">60%</div>
+        <div class="system-health-status status-warning" id="systemHealthStatus">Warning</div>
+        <div>System Health</div>
+    </div>
+
+    <!-- Add a new div for the System Health Chart -->
+    <div class="graph-container">
+        <canvas id="systemHealthChart" width="400" height="200"></canvas>
+    </div>
+
+    <div class="main-layout">
+        <div class="left-panel">
+            <div class="gauge-container">
+                <div class="gauge-meter" id="walkingBeamGaugeMeter">
+                    <span style="height: 80%;"></span>
+                </div>
+                <div class="gauge-value" id="walkingBeamValue">80%</div>
+                <div class="gauge-status status-warning" id="walkingBeamStatus">Warning</div>
+                <div>Tie Rod Health</div>
+            </div>
+
+            <div class="gauge-container">
+                <div class="gauge-meter" id="hydraulicGaugeMeter">
+                    <span style="height: 45%;"></span>
+                </div>
+                <div class="gauge-value" id="hydraulicValue">45%</div>
+                <div class="gauge-status status-ok" id="hydraulicStatus">OK</div>
+                <div>Hydraulic Health</div>
+            </div>
+
+            <div class="gauge-container">
+                <div class="gauge-meter" id="laserDiffGaugeMeter">
+                    <span style="height: 65%;"></span>
+                </div>
+                <div class="gauge-value" id="laserDiffValue">65%</div>
+                <div class="gauge-status status-warning" id="laserDiffStatus">Warning</div>
+                <div>Laser Difference</div>
+            </div>
+
+            <div class="gauge-container">
+                <div class="gauge-meter" id="tempGaugeMeter">
+                    <span style="height: 90%;"></span>
+                </div>
+                <div class="gauge-value" id="tempValue">90%</div>
+                <div class="gauge-status status-critical" id="tempStatus">Critical</div>
+                <div>Temperature</div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="section status-section">
+                <h3>Status</h3>
+                <div>Tie Rod: <span id="walkingBeamStatusLabel">OK</span></div>
+                <div>Hydraulic: <span id="hydraulicStatusLabel">OK</span></div>
+                <div>Laser Difference: <span id="laserDiffStatusLabel">OK</span></div>
+                <div>Exit Temperature: <span id="tempStatusLabel">OK</span></div>
+                <div>System Health: <span id="systemHealthStatusLabel">Warning</span></div>
+            </div>
+
+            <div class="section metrics-section">
+                <h3>Metrics for Last 1 Hour</h3>
+                <div>New Alerts: 4</div>
+                <div>Resolved Alerts: 2</div>
+                <div>Pending Alerts: 2</div>
+                <div>Total Alerts: 8</div>
+            </div>
+
+            <div class="section system-health-section">
+                <h3>System Health Parameter</h3>
+                <div>Overall Health: <span id="systemHealthParam">Good</span></div>
+            </div>
+
+            <div class="section detail-section">
+                <h3>Component Details</h3>
+                <div>Tie Rod: <span id="walkingBeamDetail">Safe</span></div>
+                <div>Hydraulic: <span id="hydraulicDetail">Safe</span></div>
+                <div>Laser Difference: <span id="laserDiffDetail">Safe</span></div>
+                <div>Exit Temperature: <span id="tempDetail">Critical</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-layout">
+        <!-- Individual Graphs -->
+        <div class="graph-container">
+            <canvas id="walkingBeamChart" width="400" height="200"></canvas>
+        </div>
+        <div class="graph-container">
+            <canvas id="hydraulicChart" width="400" height="200"></canvas>
+        </div>
+        <div class="graph-container">
+            <canvas id="laserDiffChart" width="400" height="200"></canvas>
+        </div>
+        <div class="graph-container">
+            <canvas id="tempChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Common chart options with the annotation for the 75% threshold line
+        const commonChartOptions = {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                annotation: {
+                    annotations: {
+                        line1: {
+                            type: 'line',
+                            yMin: 75,
+                            yMax: 75,
+                            borderColor: 'red',
+                            borderWidth: 2,
+                            borderDash: [6, 6],
+                            label: {
+                                content: '75% Threshold',
+                                enabled: true,
+                                position: 'end'
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Initialize the main system health chart
+        const systemHealthCtx = document.getElementById('systemHealthChart').getContext('2d');
+        new Chart(systemHealthCtx, {
+            type: 'line',
+            data: {
+                labels: ['10:00', '11:00', '12:00', '1:00', '2:00', '3:00', '4:00'], // Example labels
+                datasets: [{
+                    label: 'System Health',
+                    data: [65, 59, 80, 81, 56, 55, 40], // Example data
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: commonChartOptions
+        });
+
+        // Initialize the individual charts
+        const walkingBeamCtx = document.getElementById('walkingBeamChart').getContext('2d');
+        new Chart(walkingBeamCtx, {
+            type: 'line',
+            data: {
+                labels: ['10:00', '11:00', '12:00', '1:00', '2:00', '3:00', '4:00'], // Example labels
+                datasets: [{
+                    label: 'Tie Rod Strain',
+                    data: [65, 59, 80, 81, 56, 55, 40], // Example data
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: commonChartOptions
+        });
+
+        const hydraulicCtx = document.getElementById('hydraulicChart').getContext('2d');
+        new Chart(hydraulicCtx, {
+            type: 'line',
+            data: {
+                labels: ['10:00', '11:00', '12:00', '1:00', '2:00', '3:00', '4:00'], // Example labels
+                datasets: [{
+                    label: 'Hydraulic',
+                    data: [28, 48, 40, 19, 86, 27, 90], // Example data
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: commonChartOptions
+        });
+
+        const laserDiffCtx = document.getElementById('laserDiffChart').getContext('2d');
+        new Chart(laserDiffCtx, {
+            type: 'line',
+            data: {
+                labels: ['10:00', '11:00', '12:00', '1:00', '2:00', '3:00', '4:00'], // Example labels
+                datasets: [{
+                    label: 'Laser Diff',
+                    data: [50, 40, 60, 70, 46, 85, 30], // Example data
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: commonChartOptions
+        });
+
+        const tempCtx = document.getElementById('tempChart').getContext('2d');
+        new Chart(tempCtx, {
+            type: 'line',
+            data: {
+                labels: ['10:00', '11:00', '12:00', '1:00', '2:00', '3:00', '4:00'], // Example labels
+                datasets: [{
+                    label: 'Temp',
+                    data: [75, 62, 89, 95, 60, 70, 80], // Example data
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: commonChartOptions
+        });
+    </script>
+</body>
+</html>
